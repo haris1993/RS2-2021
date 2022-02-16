@@ -1,8 +1,10 @@
+using eProdaja.Database;
 using eProdaja.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -26,16 +28,20 @@ namespace eProdaja
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddAutoMapper(typeof(Startup));
+
             services.AddControllers();
 
             services.AddSwaggerGen();
 
+            services.AddDbContext<eProdajaContext>(options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+
             services.AddScoped<IProizvodService, ProizvodService>();
+            services.AddScoped<IKorisniciService, KorisniciService>();
 
             //transient - svaki resolve kroz konstruktor, dobija novu instancu
             //scoped - dok je "http request" "ziv" 
             //singletone - za sve requeste ista instanca
-
 
         }
 
