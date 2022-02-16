@@ -1,4 +1,9 @@
-﻿using eProdaja.Controllers;
+﻿using AutoMapper;
+using eProdaja.Controllers;
+using eProdaja.Database;
+using eProdaja.Model;
+using eProdaja.Model.Requests;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,50 +11,72 @@ using System.Threading.Tasks;
 
 namespace eProdaja.Services
 {
-    public class ProizvodService : IProizvodService
+    public class ProizvodService : BaseCRUDService<Model.Proizvodi, Database.Proizvodi, Model.ProizvodSearchObject, ProizvodiInsertRequest, ProizvodiUpdateRequest>, IProizvodService
     {
-        private static List<Proizvod> _proizvodi;
-
-        static ProizvodService()
+        public ProizvodService(eProdajaContext context, IMapper mapper) : base(context, mapper)
         {
-            _proizvodi = new List<Proizvod>()
+
+        }
+
+        public override IEnumerable<Model.Proizvodi> Get(Model.ProizvodSearchObject search = null)
+        {
+            var entity = _context.Set<Database.Proizvodi>().AsQueryable();
+
+            //WARNING: NEVER DO THIS. EXECUTES QUERY ON DB
+            //entity = entity.ToList();
+            if (!string.IsNullOrWhiteSpace(search?.Naziv))
             {
-                new Proizvod
+                entity = entity.Where(x => x.Naziv.Contains(search.Naziv));
+            }
+
+            if (search.JedinicaMjereId.HasValue)
+            {
+                entity = entity.Where(x => x.JedinicaMjereId == search.JedinicaMjereId);
+            }
+
+            if (search.VsrtaId.HasValue)
+            {
+                entity = entity.Where(x => x.VrstaId == search.VsrtaId);
+            }
+
+            if (search?.IncludeJedinicaMjere == true)
+            {
+                entity = entity.Include(x => x.JedinicaMjere);
+            }
+
+            if (search?.IncludeList?.Length > 0)
+            {
+                foreach (var item in search.IncludeList)
                 {
-                    Id = 1,
-                    Name = "Laptop"
-                },
-                new Proizvod
-                {
-                    Id = 2,
-                    Name = "Mis"
+                    entity = entity.Include(item);
                 }
-            };
+            }
+
+            var list = entity.ToList();
+
+            return _mapper.Map<List<Model.Proizvodi>>(list);
         }
 
-        public IEnumerable<Proizvod> Get()
-        {
-            return _proizvodi;
-        }
 
-        public Proizvod GetById(int id)
-        {
-            return _proizvodi.FirstOrDefault(x => x.Id == id);
-        }
+        //BAD---
+        //public override IEnumerable<Model.Proizvodi> Get()
+        //{
+        //    return base.Get();
+        //}
 
-        public Proizvod Insert(Proizvod proizvod)
-        {
-            _proizvodi.Add(proizvod);
+        //public IEnumerable<Model.Proizvodi> GetByName(string name)
+        //{
+        //    return base.Get().Where(x => x.Naziv.Contains(name)).ToList();
+        //}
 
-            return proizvod;
-        }
+        //public IEnumerable<Model.Proizvodi> GetByVrstaId(int vrstaId)
+        //{
+        //    return base.Get().Where(x => x.VrstaId == vrstaId).ToList();
+        //}
 
-        public Proizvod Update(int id, Proizvod proizvod)
-        {
-            var current = _proizvodi.FirstOrDefault(x => x.Id == id);
-            current.Name = proizvod.Name;
-
-            return current;
-        }
+        //public IEnumerable<Model.Proizvodi> GetByIdAndNaziv(int vrstaId, string name)
+        //{
+        //    return base.Get().Where(x => x.VrstaId == vrstaId && x.Naziv.Contains(name)).ToList();
+        //}
     }
 }
