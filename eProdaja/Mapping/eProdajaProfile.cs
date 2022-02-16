@@ -11,6 +11,11 @@ namespace eProdaja.Mapping
         public eProdajaProfile()
         {
             CreateMap<Database.Korisnici, Model.Korisnici>();
+            CreateMap<Database.JediniceMjere, Model.JediniceMjere>();
+            CreateMap<Database.VrsteProizvoda, Model.VrsteProizvoda>();
+            CreateMap<Database.Proizvodi, Model.Proizvodi>();
+            CreateMap<Model.Requests.ProizvodiInsertRequest, Database.Proizvodi>();
+            CreateMap<Model.Requests.ProizvodiUpdateRequest, Database.Proizvodi>();
         }
     }
 }
