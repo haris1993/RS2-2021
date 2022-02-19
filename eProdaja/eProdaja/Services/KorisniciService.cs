@@ -2,6 +2,7 @@
 using eProdaja.Database;
 using eProdaja.Filters;
 using eProdaja.Model.Requests;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -140,6 +141,25 @@ namespace eProdaja.Services
             HashAlgorithm algorithm = HashAlgorithm.Create("SHA1");
             byte[] inArray = algorithm.ComputeHash(dst);
             return Convert.ToBase64String(inArray);
+        }
+
+        public async Task<Model.Korisnici> Login(string username, string password)
+        {
+            var entity = await Context.Korisnicis.Include("KorisniciUloges.Uloga").FirstOrDefaultAsync(x => x.KorisnickoIme == username);
+
+            if (entity == null)
+            {
+                throw new UserException("Pogresan username ili password");
+            }
+
+            var hash = GenerateHash(entity.LozinkaSalt, password);
+
+            if (hash != entity.LozinkaHash)
+            {
+                throw new UserException("Pogresan username ili password");
+            }
+
+            return _mapper.Map<Model.Korisnici>(entity);
         }
 
     }

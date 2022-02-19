@@ -1,4 +1,5 @@
 ﻿using eProdaja.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
@@ -9,6 +10,7 @@ namespace eProdaja.Controllers
 {
     [ApiController]
     [Route("[controller]")]
+    [Authorize]
     public class BaseReadController<T, TSearch> : ControllerBase where T:class where TSearch: class
     {
         protected readonly IReadService<T, TSearch> _service;

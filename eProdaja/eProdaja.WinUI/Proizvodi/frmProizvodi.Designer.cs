@@ -115,7 +115,7 @@ namespace eProdaja.WinUI.Proizvodi
             this.label4.AutoSize = true;
             this.label4.Location = new System.Drawing.Point(97, 192);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(64, 21);
+            this.label4.Size = new System.Drawing.Size(51, 17);
             this.label4.TabIndex = 6;
             this.label4.Text = "Cijena:";
             // 
@@ -190,8 +190,10 @@ namespace eProdaja.WinUI.Proizvodi
             this.dgvProizvodi.Name = "dgvProizvodi";
             this.dgvProizvodi.RowHeadersWidth = 51;
             this.dgvProizvodi.RowTemplate.Height = 24;
+            this.dgvProizvodi.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
             this.dgvProizvodi.Size = new System.Drawing.Size(850, 177);
             this.dgvProizvodi.TabIndex = 0;
+            this.dgvProizvodi.CellDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dgvProizvodi_CellDoubleClick);
             // 
             // VrstaNaziv
             // 
