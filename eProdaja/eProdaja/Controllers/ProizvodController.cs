@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using eProdaja.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace eProdaja.Controllers
 {
@@ -12,15 +13,20 @@ namespace eProdaja.Controllers
     public class ProizvodController : ControllerBase
     {
         public IProizvodService _proizvodService { get; set; }
+        private ILogger<ProizvodController> _logger;
 
-        public ProizvodController(IProizvodService proizvodService)
+        public ProizvodController(IProizvodService proizvodService, ILogger<ProizvodController> logger)
         {
             _proizvodService = proizvodService;
+            _logger = logger;
         }
 
         [HttpGet]
         public IEnumerable<Proizvod> Get()
         {
+            _logger.LogInformation("Moja testna poruka");
+            _logger.LogError("Testna greska!");
+
             return _proizvodService.Get();
         }
 
