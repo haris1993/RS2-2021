@@ -1,6 +1,8 @@
 ﻿using eProdaja.Model;
 using eProdaja.Model.Requests;
 using eProdaja.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +14,13 @@ namespace eProdaja.Controllers
     {
         public ProizvodiController(IProizvodiService service) : base(service)
         {
+        }
+
+        [AllowAnonymous]
+        [HttpGet("Recommend/{id}")]
+        public List<Model.Proizvodi> Recommend(int id)
+        {
+            return (_service as IProizvodiService).Recommend(id);
         }
     }
 }

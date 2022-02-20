@@ -3,6 +3,9 @@ using eProdaja.Database;
 using eProdaja.Model;
 using eProdaja.Model.Requests;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.ML;
+using Microsoft.ML.Data;
+using Microsoft.ML.Trainers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -72,5 +75,115 @@ namespace eProdaja.Services
         //    return base.Get()
         //        .Where(x => x.VrstaId == vrstaId && x.Naziv.Contains(name)).ToList();
         //}
+
+        private static MLContext mLContext = null;
+        private static ITransformer model = null;
+
+        public List<Model.Proizvodi> Recommend(int id)
+        {
+            if (mLContext == null)
+            {
+                mLContext = new MLContext();
+
+                var tmpData = Context.Narudzbes.Include(x => x.NarudzbaStavkes).ToList();
+                var data = new List<ProductEntry>();
+
+                foreach (var x in tmpData)
+                {
+                    if (x.NarudzbaStavkes.Count > 1)
+                    {
+                        var distinctItemId = x.NarudzbaStavkes.Select(y => y.ProizvodId).ToList();
+                        distinctItemId.ForEach(y =>
+                        {
+                            var relatedItems = x.NarudzbaStavkes.Where(z => z.ProizvodId != y);
+
+                            foreach (var z in relatedItems)
+                            {
+                                data.Add(new ProductEntry()
+                                {
+                                    ProductID = (uint)y,
+                                    CoPruchaseProductID = (uint)z.ProizvodId
+                                });
+                            }
+                        });
+                    }
+                }
+
+                //# Directed graph (each unordered pair of nodes is saved once): Amazon0302.txt 
+                //# Amazon product co-purchaisng network from March 02 2003
+                //# Nodes: 262111 Edges: 1234877
+                //# ProductId	Copurchased productid
+                //                0   7
+                //                0   2
+                //                0   3
+                //                0   4
+                //                0   5
+                //                1   0
+                //                1   2
+                //                1   4
+                //                1   5
+                //                1   15
+                //                2   0
+
+                var trainData = mLContext.Data.LoadFromEnumerable(data);
+
+                //STEP 3: Your data is already encoded so all you need to do is specify options for MatrxiFactorizationTrainer with a few extra hyperparameters
+                //        LossFunction, Alpa, Lambda and a few others like K and C as shown below and call the trainer.
+                MatrixFactorizationTrainer.Options options = new MatrixFactorizationTrainer.Options();
+                options.MatrixColumnIndexColumnName = nameof(ProductEntry.ProductID);
+                options.MatrixRowIndexColumnName = nameof(ProductEntry.CoPruchaseProductID);
+                options.LabelColumnName = "Label";
+                options.LossFunction = MatrixFactorizationTrainer.LossFunctionType.SquareLossOneClass;
+                options.Alpha = 0.01;
+                options.Lambda = 0.025;
+                // For better results use the following parameters
+                options.NumberOfIterations = 100;
+                options.C = 0.00001;
+
+                //Step 4: Call the MatrixFactorization trainer by passing options.
+                var est = mLContext.Recommendation().Trainers.MatrixFactorization(options);
+
+                model = est.Fit(trainData);
+
+            }
+
+            var allItems = Context.Proizvodis.Where(x => x.ProizvodId != id);
+
+            var predicationResult = new List<Tuple<Database.Proizvodi, float>>();
+
+            foreach (var item in allItems)
+            {
+                var predictionEngine = mLContext.Model.CreatePredictionEngine<ProductEntry, Copuchase_prediction>(model);
+
+                var prediction = predictionEngine.Predict(new ProductEntry()
+                {
+                    ProductID = (uint)id,
+                    CoPruchaseProductID = (uint)item.ProizvodId
+                });
+
+                predicationResult.Add(new Tuple<Database.Proizvodi, float>(item, prediction.Score));
+
+            }
+
+            var finalResult = predicationResult.OrderByDescending(x => x.Item2).Select(x => x.Item1).Take(3).ToList();
+
+            return _mapper.Map<List<Model.Proizvodi>>(finalResult);
+        }
+    }
+
+    public class Copuchase_prediction
+    {
+        public float Score { get; set; }
+    }
+
+    public class ProductEntry
+    {
+        [KeyType(count: 262111)]
+        public uint ProductID { get; set; }
+
+        [KeyType(count: 262111)]
+        public uint CoPruchaseProductID { get; set; }
+
+        public float Label { get; set; }
     }
 }
