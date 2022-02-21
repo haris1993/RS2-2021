@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Input;
 using Xamarin.Forms;
 
@@ -9,12 +10,10 @@ namespace eProdaja.MobileApp.ViewModels
 {
     public class LoginViewModel : BaseViewModel
     {
+        public readonly APIService _service = new APIService("Korisnici");
         public LoginViewModel()
         {
-            LoginCommand = new Command(() =>
-            {
-                Username = "Iz komande";
-            });
+            LoginCommand = new Command(async () => await Login());
         }
 
         string _username = string.Empty;
@@ -32,5 +31,22 @@ namespace eProdaja.MobileApp.ViewModels
         }
 
         public ICommand LoginCommand { get; set; }
+
+        async Task Login()
+        {
+            IsBusy = true;
+            APIService.Username = Username;
+            APIService.Password = Password;
+
+            try
+            {
+                await _service.Get<dynamic>(null);
+                Application.Current.MainPage = new AppShell();
+            }
+            catch (Exception)
+            {
+
+            }
+        }
     }
 }
